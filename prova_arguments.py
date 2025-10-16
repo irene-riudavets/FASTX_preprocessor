@@ -7,7 +7,7 @@ arguments = sys.argv[1:]
 options = {
         "--input" : "",
         "--output" : "",
-        "--operation" : "",
+        "--operation" : "", #try to see if multiple values can be set for the same key
         "--trim-right" : "",
         "--trim-left" : ""
 }
@@ -17,7 +17,7 @@ for key in options:
     if key in arguments:
         print(key)
         options[key] = arguments[arguments.index(key)+1]
-        print((options[key])
+        print((options[key]))              
 
 """ Considerations:
               1. Values for trim-right and trim-left must be numerical
@@ -27,3 +27,26 @@ for key in options:
 
 
 
+def reverse_FASTA():
+    """ Do the reverse of every sequence in a FASTA file """
+    with open(options["--input"], 'rt') as file:
+        with open("reversed.fasta", 'at') as fd:
+            line_no = 0
+            for line in file:
+                line_no += 1
+                if line_no % 2 == 1:
+                    fd.write(line)
+                elif line_no % 2 == 0:
+                    fd.write(line[::-1].strip()+'\n')
+
+
+reverse_FASTA()
+
+
+
+
+
+
+
+
+    
