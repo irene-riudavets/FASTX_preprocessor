@@ -1,0 +1,1 @@
+Add .gitignore documents --> fasta and fastq
