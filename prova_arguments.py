@@ -25,19 +25,32 @@ for key in options:
               3. If operation is not trim. Trim-right and left should not beprovided. Prompt usage message or say that arguments were ignored
               4. two arguments to the same option should prompt an error. All the options (--) will be even indexes (so then all even indexes should have the -- (prompt error or ignore depending on the option) """
 
-
+def file_format():
+""" function that checks the format of the input file. Only valid .fasta and .fastq. """
+    with open(options["--input"],'rt') as file:
+        first_line=file.readline()
+        if (re.search(r".fasta+$",options["--input"])) and (">" in first_line):
+            return 2
+        elif (re.search(r".fastq$",options["--input"])) and ("@" in first_line):
+            return 4
+        else:
+            print("Not a valid file")
 
 def reverse_FASTA():
     """ Do the reverse of every sequence in a FASTA file """
+    a=file_format()
     with open(options["--input"], 'rt') as file:
-        with open("reversed.fasta", 'at') as fd:
-            line_no = 0
-            for line in file:
-                line_no += 1
-                if line_no % 2 == 1:
-                    fd.write(line)
-                elif line_no % 2 == 0:
-                    fd.write(line[::-1].strip()+'\n')
+        if a == 2:
+            with open("reversed.fasta", 'at') as fd:
+                line_no = 0
+                for line in file:
+                    line_no += 1
+                    if line_no % 2 == 1:
+                        fd.write(line)
+                    elif line_no % 2 == 0:
+                        fd.write(line[::-1].strip()+'\n')
+        elif a == 4:
+            print("reversed for fastq file not coded yet")
 
 
 reverse_FASTA()
