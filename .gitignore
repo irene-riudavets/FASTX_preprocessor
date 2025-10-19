@@ -1,0 +1,5 @@
+# Large files
+#############
+
+*.fasta
+*.fastq
