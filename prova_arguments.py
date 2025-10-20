@@ -72,6 +72,7 @@ def reverse():
                         fq.write(line[::-1].strip()+'\n')
 
 
+#Main function here
 reverse()
 
 
