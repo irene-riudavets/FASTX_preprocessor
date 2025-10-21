@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import re
 import sys
 
 commands = {
@@ -20,6 +21,7 @@ def print_usage_and_exit():
     print('\nTo get full help for a command use one of the following:\nFASTX_preprocessor command -h\nFASTX_preprocessor --help\n')
     print('\nAvailable commands:\n')
     print_commands(commands)
+    sys.exit()
 
 def print_commands(commands, indent=0):
     for key in sorted(commands):
@@ -34,11 +36,33 @@ def print_commands(commands, indent=0):
 def error():
     if len(sys.argv) == 1 or sys.argv[1] in ['-h', '-help', '--help']:
         print_usage_and_exit()
+    
+    command=re.findall(r'(--\S[^\']+)', str(arguments))
+    print(command)
+    for i in command:
+        if i not in options:
+            print('Command "' + i + '" not recognised.\n')
+            print_usage_and_exit()
 
-    command=sys.argv[1]
 
-    if command not in commands:
-        print('Command "' + command + '" not recognised.\n')
-        print_usage_and_exit()
+
+options = {
+        "--input" : "",
+        "--output" : "",
+        "--operation" : "", #try to see if multiple values can be set for the same key
+        "--trim-right" : "",
+        "--trim-left" : "",
+        "--adaptor" : ""
+}
+arguments = sys.argv[1:]
+
+
 
 error()
+
+
+
+
+
+
+#error()
