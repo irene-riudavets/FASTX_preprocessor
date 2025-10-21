@@ -10,7 +10,8 @@ options = {
         "--output" : "",
         "--operation" : "", #try to see if multiple values can be set for the same key
         "--trim-right" : "",
-        "--trim-left" : ""
+        "--trim-left" : "",
+        "--adaptor" : ""
 }
 
 #Loop to assign the argument to each option
