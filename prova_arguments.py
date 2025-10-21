@@ -16,10 +16,7 @@ options = {
 #Loop to assign the argument to each option
 for key in options:
     if key in arguments:
-        print(key)
         options[key] = arguments[arguments.index(key)+1]
-        print((options[key]))              
-
 """ Considerations:
               1. Values for trim-right and trim-left must be numerical
               2. If no argument is provided after an option (i.e --input --output) an error should pop up
@@ -42,7 +39,7 @@ def file_format():
         else:
             print("Not a valid file")
             return None
-
+    
 
 def reverse():
     """ Do the reverse of every sequence in a FASTA file """
@@ -52,25 +49,49 @@ def reverse():
         sys.exit("Error: invalid or missing input file.")
 
     with open(options["--input"], 'rt') as file:
-        if a == 2:
-            with open("reversed.fasta", 'at') as fd:
-                line_no = 0
+        with open(options["--output"],'wt') as fd:
+            line_no=0
+            reads=0
+            A=C=T=G=N=0
+            if a == 2:
                 for line in file:
                     line_no += 1
                     if line_no % 2 == 1:
                         fd.write(line)
-                    elif line_no % 2 == 0:
-                        fd.write(line[::-1].strip()+'\n')
-        elif a == 4:
-            with open("reversed.fastq", 'at') as fq:
-                line_no = 0
+                    elif line_no % 2 == 0: 
+                        rc_line=line[::-1].strip().upper().replace("A","t").replace("T","a").replace("G","c").replace("C","g").upper()
+                        fd.write(rc_line+'\n')
+                        reads+=1
+                        a,c,t,g,n = line.count("A"),line.count("C"),line.count("T"),line.count("G"), line.count("N")
+                        A+=a;C+=c;T+=t;G+=g; N+=n
+                total_bases=A+C+T+G+N
+                perc_bases=total_bases*100
+                print(f'File \'{options["--input"]}\' was successfully reversed-complemented (\'{options["--output"]}\')')
+                print("Summary:")
+                print(f'{reads}\t reads processed')
+                print(f'{str(total_bases)} bases processed ({round(((A/total_bases)*100),1)}% A, {round(((C/total_bases)*100),1)}% C, {round(((G/total_bases)*100),1)}% G, {round(((T/total_bases)*100),1)}% T, {round(((N/total_bases)*100),1)} % N)')
+
+            elif a == 4:
                 for line in file:
                     line_no += 1
-                    if line_no % 4 == 1:
-                        fq.write(line)
-                    elif line_no % 4 == 2 or line_no % 4 == 0:
-                        fq.write(line[::-1].strip()+'\n')
-
+                    module=line_no%4
+                    if module == 1:
+                        fd.write(line)
+                    elif module == 2: 
+                        rc_line=line[::-1].strip().upper().replace("A","t").replace("T","a").replace("G","c").replace("C","g").upper()
+                        fd.write(rc_line+'\n')
+                        reads+=1
+                        a,c,t,g,n = line.count("A"),line.count("C"),line.count("T"),line.count("G"),line.count("N")
+                        A+=a;C+=c;T+=t;G+=g;N+=n
+                    elif module == 3: 
+                        fd.write(line[::-1].strip()+'\n')
+                    elif module == 0:
+                        fd.write('\n')
+                total_bases=A+C+T+G+N
+                print(f'File \'{options["--input"]}\' was successfully reversed-complemented (\'{options["--output"]}\')')
+                print("Summary:")
+                print(f'{reads}\t reads processed')
+                print(f'{str(total_bases)} bases processed ({round(((A/total_bases)*100),1)}% A, {round(((C/total_bases)*100),1)}% C, {round(((G/total_bases)*100),1)}% G, {round(((T/total_bases)*100),1)}% T, {round(((N/total_bases)*100),1)} % N)')
 
 #Main function here
 reverse()
