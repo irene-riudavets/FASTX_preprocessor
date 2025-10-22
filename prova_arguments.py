@@ -42,6 +42,32 @@ def file_format():
             return None
     
 
+#Function to create the summary for the functions
+
+def summary():
+    with open(options["--input"],'rt') as file:
+        line_no = 0
+        reads = 0
+        f_f=file_format()
+        A = C = G = T = N = 0
+        for line in file:
+            if (line_no % f_f == 1): 
+                line.upper()
+                a,c,t,g,n = line.count("A"),line.count("C"),line.count("T"),line.count("G"), line.count("N")
+                A+=a;C+=c;T+=t;G+=g;N+=n
+                line_no+=1
+                reads+=1
+            else:
+                line_no+=1
+
+        total_bases=A+C+T+G+N
+        print(total_bases)
+        print("Summary:")
+        print(f'{reads}\t reads processed')
+        print(f'{str(total_bases)} bases processed ({round(((A/total_bases)*100),1)}% A, {round(((C/total_bases)*100),1)}% C, {round(((G/total_bases)*100),1)}% G, {round(((T/total_bases)*100),1)}% T, {round(((N/total_bases)*100),1)} % N)')
+
+
+
 def reverse():
     """ Do the reverse of every sequence in a FASTA file """
     a=file_format()
@@ -62,16 +88,6 @@ def reverse():
                     elif line_no % 2 == 0: 
                         rc_line=line[::-1].strip().upper().replace("A","t").replace("T","a").replace("G","c").replace("C","g").upper()
                         fd.write(rc_line+'\n')
-                        reads+=1
-                        a,c,t,g,n = line.count("A"),line.count("C"),line.count("T"),line.count("G"), line.count("N")
-                        A+=a;C+=c;T+=t;G+=g; N+=n
-                total_bases=A+C+T+G+N
-                perc_bases=total_bases*100
-                print(f'File \'{options["--input"]}\' was successfully reversed-complemented (\'{options["--output"]}\')')
-                print("Summary:")
-                print(f'{reads}\t reads processed')
-                print(f'{str(total_bases)} bases processed ({round(((A/total_bases)*100),1)}% A, {round(((C/total_bases)*100),1)}% C, {round(((G/total_bases)*100),1)}% G, {round(((T/total_bases)*100),1)}% T, {round(((N/total_bases)*100),1)} % N)')
-
             elif a == 4:
                 for line in file:
                     line_no += 1
@@ -81,24 +97,24 @@ def reverse():
                     elif module == 2: 
                         rc_line=line[::-1].strip().upper().replace("A","t").replace("T","a").replace("G","c").replace("C","g").upper()
                         fd.write(rc_line+'\n')
-                        reads+=1
-                        a,c,t,g,n = line.count("A"),line.count("C"),line.count("T"),line.count("G"),line.count("N")
-                        A+=a;C+=c;T+=t;G+=g;N+=n
                     elif module == 3: 
                         fd.write(line[::-1].strip()+'\n')
                     elif module == 0:
                         fd.write('\n')
-                total_bases=A+C+T+G+N
-                print(f'File \'{options["--input"]}\' was successfully reversed-complemented (\'{options["--output"]}\')')
-                print("Summary:")
-                print(f'{reads}\t reads processed')
-                print(f'{str(total_bases)} bases processed ({round(((A/total_bases)*100),1)}% A, {round(((C/total_bases)*100),1)}% C, {round(((G/total_bases)*100),1)}% G, {round(((T/total_bases)*100),1)}% T, {round(((N/total_bases)*100),1)} % N)')
+
+#def adaptor_removal(adaptor):
+
 
 #Main function here
-reverse()
+#reverse()
 
 
+def main():
 
+    summary()
+
+
+main()
 
 
 
