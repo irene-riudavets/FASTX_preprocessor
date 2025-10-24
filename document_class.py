@@ -19,22 +19,30 @@ class Record:
 
     #def __repr__(self): #could use __str__ as well
         """ Returns the record as a string """
-        
         #return self.strip()
 
     def __len__(self):
-        """ Return length of the sequence (then we can iterate)"""
+        """ Return length of the sequence """
         #PROGRAM BASE CONUNTER IN HERE... RETURNS THE LENGTH OF SEQUENCE IF IT ONLY CONTAINS VALID CHARACTERS (A, C, G, T OR N)
         return len(self.sequence)
 
     def get_sequence(self):
         return self.sequence
 
-    def reverse(self): #create the complement (try to use re.gsub)
-        self.sequence = self.sequence[::-1]
+    def rc(self):
+        """ Reverse complement of the sequence """
+        self.sequence = self.sequence[::-1].strip().upper().replace("A","t").replace("T","a").replace("G","c").replace("C","g").upper()
         return self
 
-    #def trim(self, cut_left = 0, cut_right = 0):
+    def trim(self, cut_left = 0, cut_right = 0):
+        """ Trim bases """
+        l=int(cut_left)
+        r=int(cut_right)
+        if l+r < len(self):
+            self.sequence = self.sequence[l:(len(self)-r):1]
+            return self
+        else:
+            sys.exit(f"Trim length {l+r} is longer than the sequence {len(self)}")
 
     #def adaptor(self):
         #if re.match(options["--adaptor"],self.sequence)
@@ -59,6 +67,15 @@ with open('insects.fasta', 'rt') as file:
             sequence = line
             record = Record(header, sequence)
             records.append(record)
+
+
+print(records[0].get_sequence())
+#print(records[0].rc().get_sequence())
+
+
+#print(records[0].trim().get_sequence())
+
+print(records[0].trim(200,20).get_sequence())
 
 
 # MODIFY RECORD
