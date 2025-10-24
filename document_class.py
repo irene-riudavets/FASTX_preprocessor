@@ -16,6 +16,9 @@ class Record:
         self.header = header
         self.sequence = sequence
         self.quality = quality
+        self.i_length = len(self)
+        self.left_out= ''
+        self.right_out= ''
 
     #def __repr__(self): #could use __str__ as well
         """ Returns the record as a string """
@@ -34,6 +37,12 @@ class Record:
     
     def get_quality(self):
         return self.quality
+    
+    def get_i_length(self):
+        return self.i_length
+
+    def get_trimmed_bases(self):
+        return str(self.left_out+self.right_out)
 
     def rc(self):
         """ Reverse complement of the sequence """
@@ -46,13 +55,15 @@ class Record:
         r=int(cut_right)
         if l+r < len(self):
             self.sequence = self.sequence[l:(len(self)-r):1]
+            self.left_out=self.sequence[0:l:1]
+            self.right_out=self.sequence[(len(self)-r)::1]
             return self
         else:
             sys.exit(f"Trim length {l+r} is longer than the sequence {len(self)}")
 
-    #def adaptor(self):
-        #if re.match(options["--adaptor"],self.sequence)
-        #call self.trim(len(options["--adaptor"])
+    def adaptor(self):
+        if re.match(options["--adaptor"],self.sequence):
+            return self.trim(len(options["--adaptor"]))
 
 #FALTAR AFEGIR A UNA FUNCIO------------------------------------------
 arguments = sys.argv[1:]
@@ -123,7 +134,43 @@ def write_output():
             if f_f==4:
                 fd.write('+\n')
                 fd.write(rec.get_quality()+'\n')
+
+def summary():
+     with open(options["--input"],'rt') as file:
+        line_no = 0
+        A = C = G = T = N = 0
+        for line in file:
+            if line_no % f_f == 1:
+                line.upper()
+                a,c,t,g,n = seq.count("A"),seq.count("C"),seq.count("T"),seq.count("G"), seq.count("N")
+                A+=a;C+=c;T+=t;G+=g;N+=n
+            line_no+=1
+
+        total_bases=A+C+T+G+N
+        print(total_bases)
+        print("Summary:")
+        print(f'{len(records)}\t reads processed')
+        print(f'{str(total_bases)} bases processed ({round(((A/total_bases)*100),1)}% A, {round(((C/total_bases)*100),1)}% C, {round(((G/total_bases)*100),1)}% G, {round(((T/total_bases)*100),1)}% T, {round(((N/total_bases)*100),1)} % N)')
+        
+        num_adaptor = 0
+        trim_bases=0
+        A = C = G = T = N = 0
+        for rec in records:
+            if options["--operation"]=="adaptor" and len(rec) != rec.get_i_length:
+                num_adaptor+=1
             
+            elif options["--operation"]=="trim":
+                trim_bases+=len(rec.get_trimmed_bases())
+                trim_seq=str(rec.get_trimmed_bases()).upper()
+                a,c,t,g,n = trim_seq.count("A"),trim_seq.count("C"),trim_seq.count("T"),trim_seq.count("G"),trim_seq.count("N")
+                A+=a;C+=c;T+=t;G+=g;N+=n
+        
+        if options["--operation"] == "adaptor":
+            print(f'{num_adaptor}\tadaptors-found')
+
+        elif trim_bases > 0:
+            print(f'{trim_bases}\tbases trimmed\t ({round(((A/trim_bases)*100),1)}% A, {round(((C/trim_bases)*100),1)}% C, {round(((G/trim_bases)*100),1)}% G, {round(((T/trim_bases)*100),1)}% T, {round(((N/trim_bases)*100),1)} % N)')
+
 #VARIABLES GLOBALS EN TOT EL CODI: F_F, OPTIONS I RECORDS
 
  
@@ -148,6 +195,10 @@ def proba_main():
     f_f=file_format() #AFEGIR ERROR SI F_F = None
     print(f_f)
     read_file_input()
-    print(len(records))
-
+    print(records[0].get_sequence())
+    print(records[0].get_i_length())
+    records[0].adaptor()
+    print(records[0].get_sequence())
+    print(records[0].get_i_length())
+    print(len(records[0]))
 proba_main()
