@@ -58,7 +58,13 @@ arguments = sys.argv[1:]
 
 
 
-error()
+#error()
+try: 
+    with open("insects.fast:","rt") as f:
+        print("abrimos bitch")
+        
+except:
+    print("not work bitch")
 
 
 

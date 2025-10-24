@@ -92,16 +92,14 @@ for key in options:
 def file_format():
     """ function that checks the format of the input file.
     Only valid .fasta and .fastq. """
-    with open(options["--input"],'rt') as file:
+    with open(options["--input"],"rt") as file:
         first_line=file.readline()
-        if (re.search(r".fasta$",options["--input"])) and (">" in first_line):
+        if (re.search(r".fasta$",options["--input"])) and (re.match(">", first_line)):
             return 2
-
-        elif (re.search(r".fastq$",options["--input"])) and ("@" in first_line):
+        elif (re.search(r".fastq$",options["--input"])) and (re.match("@",first_line)):
             return 4
         else:
-            print("Not a valid file")
-            return None
+            sys.exit("Invalid file format. Use only .fasta or .fastq files")
 
 def read_file_input(): #OPEN FILE AND CREATE RECORD
     global records 
@@ -188,7 +186,11 @@ def summary():
 
 def main():
     global f_f
-    f_f=file_format()
+    try:
+        f_f=file_format()
+    except FileNotFoundError:
+        sys.exit("Unable to read input file")
+
     read_file_input()
     operation()
     write_output()
@@ -201,12 +203,7 @@ def proba_main():
     global f_f
     f_f=file_format() #AFEGIR ERROR SI F_F = None
     print(f_f)
-    read_file_input()
-    print(records[0].get_sequence())
-    records[0].trim(5,5)
-    
-    print('\n')
-    print(records[0].get_trimmed_bases())
+    #read_file_input()
 
-main()
+proba_main()
 
