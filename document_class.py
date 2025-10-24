@@ -47,6 +47,8 @@ class Record:
     def rc(self):
         """ Reverse complement of the sequence """
         self.sequence = self.sequence[::-1].strip().upper().replace("A","t").replace("T","a").replace("G","c").replace("C","g").upper()
+        if f_f == 4: #case of a fastq input file
+            self.quality = self.quality[::-1]
         return self
 
     def trim(self, cut_left = 0, cut_right = 0):
@@ -54,9 +56,13 @@ class Record:
         l=int(cut_left)
         r=int(cut_right)
         if l+r < len(self):
-            self.sequence = self.sequence[l:(len(self)-r):1]
             self.left_out=self.sequence[0:l:1]
             self.right_out=self.sequence[(len(self)-r)::1]
+            self.sequence = self.sequence[l:(len(self)-r):1]
+
+
+            if f_f == 4:
+                self.quality = self.quality[l:((self.i_length)-r):1]
             return self
         else:
             sys.exit(f"Trim length {l+r} is longer than the sequence {len(self)}")
@@ -72,8 +78,8 @@ options = {
         "--input" : "",
         "--output" : "",
         "--operation" : "", #try to see if multiple values can be set for the same key
-        "--trim-right" : "",
-        "--trim-left" : "",
+        "--trim-right" : 0,
+        "--trim-left" : 0,
         "--adaptor" : ""
 }
 
@@ -122,7 +128,7 @@ def operation():
         if options["--operation"] == "rc":
             rec.rc()
         elif options["--operation"] == "trim":
-            rec.trim()
+            rec.trim(options["--trim-left"],options["--trim-right"])
         elif options["--operation"] == "adaptor-removal":
             rec.adaptor()
 
@@ -196,9 +202,8 @@ def proba_main():
     print(f_f)
     read_file_input()
     print(records[0].get_sequence())
-    print(records[0].get_i_length())
-    records[0].adaptor()
-    print(records[0].get_sequence())
-    print(records[0].get_i_length())
-    print(len(records[0]))
+    records[0].trim(5,5)
+    
+    print('\n')
+    print(records[0].get_trimmed_bases())
 proba_main()
