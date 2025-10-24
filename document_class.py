@@ -16,7 +16,7 @@ class Record:
         self.header = header
         self.sequence = sequence
         self.quality = quality
-        self.i_length = len(self)
+        self.i_length = len(sequence)
         self.left_out= ''
         self.right_out= ''
 
@@ -147,7 +147,7 @@ def summary():
         A = C = G = T = N = 0
         for line in file:
             if line_no % f_f == 1:
-                line.upper()
+                seq=line.upper()
                 a,c,t,g,n = seq.count("A"),seq.count("C"),seq.count("T"),seq.count("G"), seq.count("N")
                 A+=a;C+=c;T+=t;G+=g;N+=n
             line_no+=1
@@ -162,7 +162,7 @@ def summary():
         trim_bases=0
         A = C = G = T = N = 0
         for rec in records:
-            if options["--operation"]=="adaptor" and len(rec) != rec.get_i_length:
+            if (options["--operation"]=="adaptor-removal") and (len(rec) != rec.get_i_length()):
                 num_adaptor+=1
             
             elif options["--operation"]=="trim":
@@ -171,7 +171,7 @@ def summary():
                 a,c,t,g,n = trim_seq.count("A"),trim_seq.count("C"),trim_seq.count("T"),trim_seq.count("G"),trim_seq.count("N")
                 A+=a;C+=c;T+=t;G+=g;N+=n
         
-        if options["--operation"] == "adaptor":
+        if options["--operation"] == "adaptor-removal":
             print(f'{num_adaptor}\tadaptors-found')
 
         elif trim_bases > 0:
@@ -187,13 +187,14 @@ def summary():
 # rec.reverse... trim... adaptor
 
 def main():
+    global f_f
     f_f=file_format()
     read_file_input()
     operation()
     write_output()
+    summary()
 #WRITE OUTPUT FILE
 
-#summary()
 
 
 def proba_main():
@@ -206,4 +207,6 @@ def proba_main():
     
     print('\n')
     print(records[0].get_trimmed_bases())
-proba_main()
+
+main()
+
