@@ -51,6 +51,7 @@ class Record:
             self.quality = self.quality[::-1]
         return self
 
+
     def trim(self, cut_left = 0, cut_right = 0):
         """ Trim bases """
         l=int(cut_left)
@@ -65,7 +66,12 @@ class Record:
                 self.quality = self.quality[l:((self.i_length)-r):1]
             return self
         else:
-            sys.exit(f"Trim length {l+r} is longer than the sequence {len(self)}")
+            if options["--operation"] == "trim":
+                sys.exit(f"Trim length {l+r} is longer than the sequence {len(self)}")
+            else:
+                if options["--operation"] == "adaptor-removal":
+                    sys.exit(f"Adaptor length {l+r} is longer than the sequence {len(self)}")
+
 
     def adaptor(self):
         if re.match(options["--adaptor"],self.sequence):
@@ -77,16 +83,100 @@ arguments = sys.argv[1:]
 options = {
         "--input" : "",
         "--output" : "",
-        "--operation" : "", #try to see if multiple values can be set for the same key
+        "--operation" : "", 
         "--trim-right" : 0,
         "--trim-left" : 0,
         "--adaptor" : ""
 }
 
+commands = {
+        'input'                 :       'Provide a valid file in .fasta or .fastq format',
+        'operation'             :       {
+            'adaptor-removal'   :       'Search for the provided adaptor sequence and remove it',   
+            'rc'                :       'Compute the reverse complement of each sequence',
+            'trim'              :       {
+                'trim-left'     :       'Trim the specified number of bases starting from the left',
+                'trim-right'    :       'Trim the specified number of bases starting form the right'
+                }
+            },
+        'output'                :       'Provide a name for the created file with the same format as the input file(.fasta or .fastq)'
+    }
+
+
+def print_usage_and_exit():
+    print('Usage: FASTX_preprocessor <command> [options]')
+    print('\nTo get full help for the program use one of the following:\nFASTX_preprocessor -h\nFASTX_preprocessor --help\n')
+    print('\nAvailable commands:\n')
+    print_commands(commands)
+    sys.exit()
+
+
+def print_commands(commands, indent=0):
+    for key in sorted(commands):
+        value = commands[key]
+        if isinstance(value, dict): #The isinstance() function returns True if the specified object is of the specified type, otherwise False.
+            print(' ' * indent + f"{key}:")
+            print_commands(value, indent + 4)
+        else:
+            print(' ' * indent + f"{key}: {value}\n")
+
+
 #Loop to assign the argument to each option
 for key in options:
     if key in arguments:
-        options[key] = arguments[arguments.index(key)+1]
+        try:
+                options[key] = arguments[arguments.index(key)+1]
+        
+        except IndexError as ie:
+            sys.exit(f"No argument was provided for {key}")
+
+
+def validate_options(options):
+    
+    command = re.findall(r'(--\S[^\']+)', str(arguments))
+    for i in command:
+        if i not in options:
+            print('Command "' + i + '" not recognised.\n')
+            print_usage_and_exit()
+    try:
+        #Validation checks
+        if options.get("--input","") in options:    
+            raise KeyError("Input file is required")
+
+        if options.get("--output","") in options:
+            raise KeyError("A name for the output file is required")
+
+
+        #Operation check
+        value = str(options["--operation"]).lower()
+        if value not in ('rc', 'trim', 'adaptor-removal'):
+            raise KeyError("Please provide a valid operation: <rc>, <trim> or <adaptor-removal>")
+
+        elif value == 'trim': 
+            for key in ("--trim-left", "--trim-right"):
+                value = options[key] #fer un re de que la string sigui només numérica
+                if not value.isdigit() or int(value) < 0:
+                    raise ValueError(f"{key} must be a positive integer")
+
+        elif value == 'adaptor-removal':
+            print("CACA")
+
+    except KeyError as ke:
+        print(f"Missing Key Error: {ke}")
+        return False
+
+    except ValueError as ve:
+        print(f"Validation Error: {ve}")
+        return False
+
+""" Do all the checks within the dictionary: 
+    1. If the key is an option of the dictionary fail (avoid putting --input --output but allow for instance a document named --alkdsaf.txt
+    2. """
+
+
+validate_options(options)
+
+
 #--------------------------------------------------------------------
 
 def file_format():
@@ -205,5 +295,5 @@ def proba_main():
     print(f_f)
     #read_file_input()
 
-proba_main()
+#proba_main()
 
