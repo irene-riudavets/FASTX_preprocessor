@@ -26,7 +26,6 @@ class Record:
 
     def __len__(self):
         """ Return length of the sequence """
-        #PROGRAM BASE CONUNTER IN HERE... RETURNS THE LENGTH OF SEQUENCE IF IT ONLY CONTAINS VALID CHARACTERS (A, C, G, T OR N)
         return len(self.sequence)
 
     def get_header(self):
@@ -74,6 +73,11 @@ class Record:
 
 
     def adaptor(self):
+
+        """ Method to find the adaptor sequence within the sequence and
+        trim it. This method calls self.trim since it performs the
+        operation of removing a certain number of bases """
+
         if re.match(options["--adaptor"],self.sequence):
             return self.trim(len(options["--adaptor"]))
 
@@ -105,7 +109,6 @@ commands = {
 
 def print_usage_and_exit():
     print('Usage: FASTX_preprocessor <command> [options]')
-    print('\nTo get full help for the program use one of the following:\nFASTX_preprocessor -h\nFASTX_preprocessor --help\n')
     print('\nAvailable commands:\n')
     print_commands(commands)
     sys.exit()
@@ -130,66 +133,72 @@ for key in options:
         except IndexError as ie:
             sys.exit(f"No argument was provided for {key}")
 
+def validate_arguments(options):
 
-def validate_options(options):
-    
+    # 1. Check that all command-line arguments are recognized
+
     command = re.findall(r'(--\S[^\']+)', str(arguments))
     for i in command:
         if i not in options:
-            print('Command "' + i + '" not recognised.\n')
-            print_usage_and_exit()
-    try:
-        #Validation checks
-        if options.get("--input","") in options:    
-            raise KeyError("Input file is required")
+            sys.exit(f'Command {i} not recognised.\nUse ./FASTX_processor.py <-h> or <--help> for usage information')
 
-        if options.get("--output","") in options:
-            raise KeyError("A name for the output file is required")
+    # 2. Verify that the required options are provided
+    
+    if not options["--input"]:    
+        sys.exit("Error: no input file provided. Use --input <filename>")
 
+    if not options["--output"]:
+        sys.exit("Error: no output file provided. Use --output <filename>")
 
-        #Operation check
-        value = str(options["--operation"]).lower()
-        if value not in ('rc', 'trim', 'adaptor-removal'):
-            raise KeyError("Please provide a valid operation: <rc>, <trim> or <adaptor-removal>")
-
-        elif value == 'trim': 
-            for key in ("--trim-left", "--trim-right"):
-                value = options[key] #fer un re de que la string sigui només numérica
-                if not value.isdigit() or int(value) < 0:
-                    raise ValueError(f"{key} must be a positive integer")
-
-        elif value == 'adaptor-removal':
-            print("CACA")
-
-    except KeyError as ke:
-        print(f"Missing Key Error: {ke}")
-        return False
-
-    except ValueError as ve:
-        print(f"Validation Error: {ve}")
-        return False
-
-""" Do all the checks within the dictionary: 
-    1. If the key is an option of the dictionary fail (avoid putting --input --output but allow for instance a document named --alkdsaf.txt
-    2. """
+    if not options["--operation"]:
+        sys.exit("Error: No operation provided. Use --operation <rc|trim|adaptor-removal>")
 
 
-validate_options(options)
+    # 3. Valid operation type check
 
+    value = str(options["--operation"]).lower()
+    if value not in ('rc', 'trim', 'adaptor-removal'):
+        sys.exit("Please provide a valid operation: <rc>, <trim> or <adaptor-removal>")
+    
+    # 4. Specific operation checks
+
+    if value == 'trim':
+        # Both trim-left and trim-right must be positive (or 0) integers
+        trim_value = []
+        for key in ("--trim-left", "--trim-right"):
+            value = str(options[key]) 
+            trim_value.append(value)
+
+            if not value.isdigit() or int(value) < 0:
+                sys.exit(f"{key} must be a positive integer")
+
+        if trim_value.count('0') == 2:
+            sys.exit(f"Error: when using --operation trim, provide --trim-left and/or --trim-right followed by a positive integer")
+
+    elif value == 'adaptor-removal':
+        # Adapotor sequence cannot be empty and only contain valid characters
+        adaptor = options["--adaptor"].upper()
+        if not adaptor:
+            sys.exit("Error: when using --operation adaptor-removal, provide --adaptor <sequence>")
+        if not re.fullmatch(r"[ACGTN]+", adaptor):
+            sys.exit("Error: Adaptor sequence must only contain A, C, G, T or N")
 
 #--------------------------------------------------------------------
 
 def file_format():
     """ function that checks the format of the input file.
     Only valid .fasta and .fastq. """
-    with open(options["--input"],"rt") as file:
-        first_line=file.readline()
-        if (re.search(r".fasta$",options["--input"])) and (re.match(">", first_line)):
-            return 2
-        elif (re.search(r".fastq$",options["--input"])) and (re.match("@",first_line)):
-            return 4
-        else:
-            sys.exit("Invalid file format. Use only .fasta or .fastq files")
+    try:
+        with open(options["--input"],"rt") as file:
+            first_line=file.readline()
+            if (re.search(r".fasta$",options["--input"])) and (re.match(">", first_line)):
+                return 2
+            elif (re.search(r".fastq$",options["--input"])) and (re.match("@",first_line)):
+                return 4
+            else:
+                sys.exit("Invalid file format. Use only .fasta or .fastq files")
+    except FileNotFoundError:
+        sys.exit("Unable to read input file")
 
 def read_file_input(): #OPEN FILE AND CREATE RECORD
     global records 
@@ -215,8 +224,10 @@ def operation():
     for rec in records:
         if options["--operation"] == "rc":
             rec.rc()
+
         elif options["--operation"] == "trim":
             rec.trim(options["--trim-left"],options["--trim-right"])
+
         elif options["--operation"] == "adaptor-removal":
             rec.adaptor()
 
@@ -225,45 +236,72 @@ def write_output():
         for rec in records:
             fd.write(rec.get_header()+'\n')
             fd.write(rec.get_sequence()+'\n')
+            
             if f_f==4:
                 fd.write('+\n')
                 fd.write(rec.get_quality()+'\n')
 
+
+# Summary ====================================================
+
 def summary():
-     with open(options["--input"],'rt') as file:
+    """ Print summary statistics for the FASTA/FASTQ file """
+
+    bases = {'A' : 0, 'C' : 0, 'G' : 0, 'T' : 0, 'N' : 0}
+
+    with open(options["--input"],'rt') as file:
         line_no = 0
-        A = C = G = T = N = 0
         for line in file:
             if line_no % f_f == 1:
-                seq=line.upper()
-                a,c,t,g,n = seq.count("A"),seq.count("C"),seq.count("T"),seq.count("G"), seq.count("N")
-                A+=a;C+=c;T+=t;G+=g;N+=n
-            line_no+=1
+                for base in bases:
+                    bases[base] += line.upper().count(base)
+            line_no += 1        
 
-        total_bases=A+C+T+G+N
-        print(total_bases)
-        print("Summary:")
-        print(f'{len(records)}\t reads processed')
-        print(f'{str(total_bases)} bases processed ({round(((A/total_bases)*100),1)}% A, {round(((C/total_bases)*100),1)}% C, {round(((G/total_bases)*100),1)}% G, {round(((T/total_bases)*100),1)}% T, {round(((N/total_bases)*100),1)} % N)')
-        
-        num_adaptor = 0
-        trim_bases=0
-        A = C = G = T = N = 0
+    total_bases = sum(bases.values())
+    print("Summary:")
+    print(f'{len(records)}\t reads processed')
+    
+    percentages = {}
+    for base in bases:
+        percentages[base] = round((bases[base] / total_bases) * 100, 2)
+    
+    print(f'{total_bases} bases processed '
+          f'({percentages['A']}% A, {percentages['C']}% C, '
+          f'{percentages['G']}% G, {percentages['T']}% T, '
+          f'{percentages['N']}% N)')
+
+    #Extra information for --operation <trim> and <adaptor-removal>
+    
+
+    if options["--operation"] == "adaptor-removal":
+        num_adaptors = 0
         for rec in records:
-            if (options["--operation"]=="adaptor-removal") and (len(rec) != rec.get_i_length()):
-                num_adaptor+=1
-            
-            elif options["--operation"]=="trim":
-                trim_bases+=len(rec.get_trimmed_bases())
-                trim_seq=str(rec.get_trimmed_bases()).upper()
-                a,c,t,g,n = trim_seq.count("A"),trim_seq.count("C"),trim_seq.count("T"),trim_seq.count("G"),trim_seq.count("N")
-                A+=a;C+=c;T+=t;G+=g;N+=n
-        
-        if options["--operation"] == "adaptor-removal":
-            print(f'{num_adaptor}\tadaptors-found')
+            if len(rec) != rec.get_i_length():
+                num_adaptors += 1
+        print(f'{num_adaptors}\tadaptors-found')
+    
 
-        elif trim_bases > 0:
-            print(f'{trim_bases}\tbases trimmed\t ({round(((A/trim_bases)*100),1)}% A, {round(((C/trim_bases)*100),1)}% C, {round(((G/trim_bases)*100),1)}% G, {round(((T/trim_bases)*100),1)}% T, {round(((N/trim_bases)*100),1)} % N)')
+    elif options["--operation"] == "trim":
+        trim_bases=0
+        trim_counts = {'A' : 0, 'C' : 0, 'G' : 0, 'T' : 0, 'N' : 0}
+
+        for rec in records:
+            trim_seq = str(rec.get_trimmed_bases().upper()) 
+            trim_bases += len(trim_seq)
+            for base in trim_counts:
+                trim_counts[base] += trim_seq.count(base)
+        
+        total_trimmed = sum(trim_counts.values())
+
+        percentages_trim = {}
+        for base in trim_counts:
+            percentages_trim[base] = round((trim_counts[base] / total_trimmed) * 100, 2)
+        print(f'{total_trimmed} bases trimmed '
+              f'({percentages_trim['A']}% A,' 
+              f' {percentages_trim['C']}% C,'
+              f' {percentages_trim['G']}% G,'
+              f' {percentages_trim['T']}% T,'
+              f' {percentages_trim['N']}% N)')
 
 #VARIABLES GLOBALS EN TOT EL CODI: F_F, OPTIONS I RECORDS
 
@@ -296,4 +334,19 @@ def proba_main():
     #read_file_input()
 
 #proba_main()
+
+def prova_main():
+    if sys.argv[1] in ['-h', '-help', '--help']:
+        print_usage_and_exit()
+
+    validate_arguments(options)
+    global f_f
+    f_f = file_format()
+    read_file_input()
+    operation()
+    write_output()
+    summary()
+
+
+prova_main()
 
