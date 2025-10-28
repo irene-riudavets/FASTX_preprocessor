@@ -62,7 +62,7 @@ class Record:
         (`f_f == 4`), the quality string is also reversed.
         
         Returns:
-        The modified record after reverse complementation.
+            The modified record after reverse complementation.
         """
 
         self.sequence = self.sequence[::-1].strip().upper().replace("A","t").replace("T","a").replace("G","c").replace("C","g").upper()
@@ -83,10 +83,10 @@ class Record:
         cut_right (int): Number of bases to trim from the right side.
 
         Returns:
-        Record: The modified record after trimming.
+            Record: The modified record after trimming.
 
         Raises:
-        SystemExit: If total trim length is greater than sequence length.
+            SystemExit: If total trim length is greater than sequence length.
         """
 
         l=int(cut_left)
@@ -114,13 +114,22 @@ class Record:
         the left side of the sequence by calling `self.trim()`.
         
         Returns:
-        The modified record after adaptor removal, if adaptor is found.
+            The modified record after adaptor removal, if adaptor is found.
         """
 
         if re.match(options["--adaptor"].upper(),self.sequence.upper()):
             return self.trim(len(options["--adaptor"]))
 
 def define_options():
+    """Define and parse command-line options.
+
+    Initializes valid command-line arguments and checks their structure.
+    Populates the 'options' dictionary with values.
+
+    Raises:
+        SystemExit: If argument usage is invalid or required arguments are missing.
+    """
+
     global options
     global commands
     global arguments
@@ -155,24 +164,33 @@ def define_options():
     #Loop to assign the argument to each option
     for i in range(0,len(arguments)):
         if i%2==1 and re.match("--",arguments[i]):
-            sys.exit(f"WARNING. Usage <--command> <argument>. Arguments cannot start with \"--\"")    
+            sys.exit(f'WARNING. Usage <--command> <argument>. Arguments cannot start with \"--\"')    
         elif i%2==0 and not re.match("--",arguments[i]):
-            sys.exit(f"WARNING. Usage <--command> <argument>.")
+            sys.exit(f'WARNING. Usage <--command> <argument>.')
 
     for key in options:
         if key in arguments:
             try:
                     options[key] = arguments[arguments.index(key)+1]
             except IndexError as ie:
-                sys.exit(f"WARNING. No argument was provided for {key}")
+                sys.exit(f'WARNING. No argument was provided for {key}')
 
 def print_usage_and_exit():
+    """ Displays available command-line options with usage guidance and terminates execution."""
+    
     print('Usage: FASTX_preprocessor <--command(s)> <argument(s)>')
     print('\nAvailable commands:\n')
     print_commands(commands)
     sys.exit()
 
 def print_commands(commands, indent=0):
+    """Print all available commands with indentation.
+
+    Args:
+        commands (dict): Dictionary of available command-line options.
+        indent (int): Indentation level for nested commands.
+    """
+    
     for key in sorted(commands):
         value = commands[key]
         if isinstance(value, dict): #The isinstance() function returns True if the specified object is of the specified type, otherwise False.
@@ -182,6 +200,17 @@ def print_commands(commands, indent=0):
             print(' ' * indent + f"{key}: {value}\n")
 
 def validate_arguments(options):
+    """Validate command-line arguments.
+
+    Checks that arguments are recognized, properly formatted, and compatible
+    with selected operations.
+
+    Args:
+        options (dict): Dictionary containing parsed command-line arguments.
+
+    Raises:
+        SystemExit: If any validation error or logical conflict is found.
+    """
 
     # 1. Check that all command-line arguments are recognized
 
@@ -200,7 +229,6 @@ def validate_arguments(options):
         sys.exit("WARNING. No output file provided. Use --output <filename>")
     elif not options["--operation"]:
         sys.exit("WARNING. No operation provided. Use --operation <rc|trim|adaptor-removal>")
-
 
     # 3. Valid operation type check
     
@@ -232,8 +260,18 @@ def validate_arguments(options):
             sys.exit("WARNING. Adaptor sequence must only contain A, C, G, T or N")
 
 def file_format():
-    """ function that checks the format of the input file.
-    Only valid .fasta and .fastq. """ #ADD THAT THE RETURN VALUE WILL BE 2 FOR FASTA AND 4 FOR FASTQ
+    """Determine the input file type.
+
+    Checks whether the input file is a FASTA or FASTQ file based on
+    file extension and header format.
+
+    Returns:
+        int: 2 if input is FASTA, 4 if input is FASTQ.
+
+    Raises:
+        SystemExit: If the file format is invalid or cannot be read.
+    """
+    
     try:
         with open(options["--input"],"rt") as file:
             first_line=file.readline()
@@ -247,7 +285,17 @@ def file_format():
         sys.exit("WARNING. Unable to read input file")
 
 def read_file_input(): #OPEN FILE AND CREATE RECORD
-    global records # "records" varaible will contain all input file information (headers, sequences,<quality>) stored in Record class object 
+    """Parse input file and load sequence records.
+
+    Reads a FASTA/FASTQ file line by line, constructing Record objects
+    for each entry.
+
+    Returns:
+        records (list): List of Record objects extracted from the input file.
+        It will contain all input file information (header, sequence, <quality>)
+    """
+    
+    global records
     records = []
     with open(options["--input"], 'rt') as file:
         line_no = 0
@@ -267,6 +315,12 @@ def read_file_input(): #OPEN FILE AND CREATE RECORD
             line_no+=1
 
 def operation():
+    """Perform selected sequence operation.
+
+    Applies the operation specified by the user ('rc', 'trim', or 'adaptor-removal')
+    to every sequence record. 
+    """
+    
     for rec in records:
         if options["--operation"] == "rc":
             rec.rc()
@@ -281,6 +335,12 @@ def operation():
     print(f'File \'{options["--input"]}\' was succesfully {print_message[options["--operation"]]} (\'{options["--output"]}\')')
 
 def write_output():
+    """Write processed records to the output file.
+
+    Writes sequence data to the specified output file in the same format
+    as the input (FASTA or FASTQ).
+    """
+    
     with open(options["--output"],"wt") as fd:
         for rec in records:
             fd.write(rec.get_header()+'\n')
@@ -291,7 +351,11 @@ def write_output():
                 fd.write(rec.get_quality()+'\n')
 
 def summary():
-    """ Print summary statistics for the FASTA/FASTQ file """
+    """Print a summary of the input file and results.
+
+    Calculates and prints overall bases processed, number of processed reads,
+    and summary statistics depending on the operation performed.
+    """
 
     bases = {'A' : 0, 'C' : 0, 'G' : 0, 'T' : 0, 'N' : 0}
 
@@ -348,6 +412,8 @@ def summary():
               f' {percentages_trim['N']}% N)')
 
 def main():
+    """Execute the FASTX preprocessing pipeline."""
+    
     define_options()
     validate_arguments(options)
     global f_f
