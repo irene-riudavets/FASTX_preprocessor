@@ -59,35 +59,36 @@ class Record:
             return self
         else:
             if options["--operation"] == "trim":
-                sys.exit(f"Trim length {l+r} is longer than the sequence {len(self)}")
+                sys.exit(f"WARNING. Trim length {l+r} is longer than the sequence length: {len(self)} bp")
             else:
                 if options["--operation"] == "adaptor-removal":
-                    sys.exit(f"Adaptor length {l+r} is longer than the sequence {len(self)}")
+                    sys.exit(f"WARNING. Adaptor length {l+r} is longer than the sequence {len(self)}")
 
     def adaptor(self):
         """ Method to find the adaptor sequence within the sequence and
         trim it. This method calls self.trim since it performs the
         operation of removing a certain number of bases """
-        if re.match(options["--adaptor"],self.sequence):
+        if re.match(options["--adaptor"].upper(),self.sequence.upper()):
             return self.trim(len(options["--adaptor"]))
 
 def define_options():
     global options
     global commands
+    global arguments
 
     commands = {
-            'input'                 :       'Provide a valid file in .fasta or .fastq format',
-            'operation'             :       {
-                'adaptor-removal'   :       {
-                    'adaptor'       :        'Search for the provided adaptor sequence and remove it'
+            '--input'                 :       'Provide a valid file in .fasta or .fastq format',
+            '--operation'             :       {
+                '<adaptor-removal>'   :       {
+                    '--adaptor'       :        'Search for the provided adaptor sequence and remove it'
                 },   
-                'rc'                :       'Compute the reverse complement of each sequence',
-                'trim'              :       {
-                    'trim-left'     :       'Trim the specified number of bases starting from the left',
-                    'trim-right'    :       'Trim the specified number of bases starting form the right'
+                '<rc>'                :       'Compute the reverse complement of each sequence',
+                '<trim>'              :       {
+                    '--trim-left'     :       'Trim the specified number of bases starting from the left',
+                    '--trim-right'    :       'Trim the specified number of bases starting form the right'
                     }
                 },
-            'output'                :       'Provide a name for the created file with the same format as the input file(.fasta or .fastq)'
+            '--output'                :       'Provide a name for the created file with the same format as the input file(.fasta or .fastq)'
         }
     options = {
             "--input" : "",
@@ -97,21 +98,27 @@ def define_options():
             "--trim-left" : 0,
             "--adaptor" : ""
         }
-    
-    if sys.argv[1] in ['-h', '-help', '--help']:
+
+    if len(sys.argv) == 1 or sys.argv[1] in ['-h', '-help', '--help']:
         print_usage_and_exit()
     
     arguments = sys.argv[1:]
     #Loop to assign the argument to each option
+    for i in range(0,len(arguments)):
+        if i%2==1 and re.match("--",arguments[i]):
+            sys.exit(f"WARNING. Usage <--command> <argument>. Arguments cannot start with \"--\"")    
+        elif i%2==0 and not re.match("--",arguments[i]):
+            sys.exit(f"WARNING. Usage <--command> <argument>.")
+
     for key in options:
         if key in arguments:
             try:
                     options[key] = arguments[arguments.index(key)+1]
             except IndexError as ie:
-                sys.exit(f"No argument was provided for {key}")
+                sys.exit(f"WARNING. No argument was provided for {key}")
 
 def print_usage_and_exit():
-    print('Usage: FASTX_preprocessor <command> [options]')
+    print('Usage: FASTX_preprocessor <--command(s)> <argument(s)>')
     print('\nAvailable commands:\n')
     print_commands(commands)
     sys.exit()
@@ -132,25 +139,25 @@ def validate_arguments(options):
     command = re.findall(r'(--\S[^\']+)', str(arguments))
     for i in command:
         if i not in options:
-            sys.exit(f'Command {i} not recognised.\nUse ./FASTX_processor.py <-h> or <--help> for usage information')
+            sys.exit(f'WARNING. Command {i} not recognised.\nUse ./FASTX_processor.py <-h> or <--help> for usage information')
         elif command.count(i)>1:
-            sys.exit(f'Command {i} is repeated, it must only be provided once')
+            sys.exit(f'WARNING. Command {i} is repeated, it must only be provided once')
 
     # 2. Verify that the required options are provided
     
     if not options["--input"]:    
-        sys.exit("Error: no input file provided. Use --input <filename>")
+        sys.exit("WARNING. No input file provided. Use --input <filename>")
     elif not options["--output"]:
-        sys.exit("Error: no output file provided. Use --output <filename>")
+        sys.exit("WARNING. No output file provided. Use --output <filename>")
     elif not options["--operation"]:
-        sys.exit("Error: No operation provided. Use --operation <rc|trim|adaptor-removal>")
+        sys.exit("WARNING. No operation provided. Use --operation <rc|trim|adaptor-removal>")
 
 
     # 3. Valid operation type check
     
     value = str(options["--operation"]).lower()
     if value not in ('rc', 'trim', 'adaptor-removal'):
-        sys.exit("Please provide a valid operation: <rc>, <trim> or <adaptor-removal>")
+        sys.exit("WARNING. Provide a valid operation: <rc>, <trim> or <adaptor-removal>")
     
     # 4. Specific operation checks
 
@@ -162,18 +169,18 @@ def validate_arguments(options):
             trim_value.append(value)
 
             if not value.isdigit() or int(value) < 0:
-                sys.exit(f"{key} must be a positive integer")
+                sys.exit(f"WARNING. {key} must be a positive integer")
 
         if trim_value.count('0') == 2: # Case where no --trim-left or --trim-right was provided
-            sys.exit(f"Error: when using --operation trim, provide --trim-left and/or --trim-right followed by a positive integer")
+            sys.exit(f"WARNING. When using --operation trim, provide --trim-left and/or --trim-right followed by a positive integer")
 
     elif value == 'adaptor-removal':
         # Adapotor sequence cannot be empty and only contain valid characters
         adaptor = options["--adaptor"].upper()
         if not adaptor:
-            sys.exit("Error: when using --operation adaptor-removal, provide --adaptor <sequence>")
+            sys.exit("WARNING. When using --operation adaptor-removal, provide --adaptor <sequence>")
         if not re.fullmatch(r"[ACGTN]+", adaptor):
-            sys.exit("Error: Adaptor sequence must only contain A, C, G, T or N")
+            sys.exit("WARNING. Adaptor sequence must only contain A, C, G, T or N")
 
 def file_format():
     """ function that checks the format of the input file.
@@ -186,9 +193,9 @@ def file_format():
             elif (re.search(r".fastq$",options["--input"])) and (re.match("@",first_line)):
                 return 4
             else:
-                sys.exit("Invalid file format. Use only .fasta or .fastq files")
+                sys.exit("WARNING. Invalid file format. Use only .fasta or .fastq files")
     except FileNotFoundError:
-        sys.exit("Unable to read input file")
+        sys.exit("WARNING. Unable to read input file")
 
 def read_file_input(): #OPEN FILE AND CREATE RECORD
     global records # "records" varaible will contain all input file information (headers, sequences,<quality>) stored in Record class object 
@@ -222,7 +229,7 @@ def operation():
             rec.adaptor()
     
     print_message={"rc":"reversed-complemented","trim":"hard-trimmed","adaptor-removal":"processed"}
-    print(f'File {options["--input"]} was succesfully {print_message[options["--operation"]]} (\'{options["--output"]}\')')
+    print(f'File \'{options["--input"]}\' was succesfully {print_message[options["--operation"]]} (\'{options["--output"]}\')')
 
 def write_output():
     with open(options["--output"],"wt") as fd:
