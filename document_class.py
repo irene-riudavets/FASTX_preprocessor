@@ -194,7 +194,7 @@ def define_options():
 def print_usage_and_exit():
     """ Displays available command-line options with usage guidance and terminates execution."""
     
-    print('Usage: FASTX_preprocessor <--command(s)> <argument(s)>')
+    print('Usage: ./fastx_pp.py --command(s) <argument(s)>')
     print('\nAvailable commands:\n')
     print_commands(commands)
     sys.exit()
