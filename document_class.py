@@ -1,5 +1,14 @@
 #!/usr/bin/python3
 
+"""
+FASTX Preprocessor Module
+
+This module provides tools to process FASTA/FASTQ files by performing operations such as 
+reverse complementation, trimming, and adaptor removal. 
+It defines a `Record` class to represent sequence records and command-line utilities for
+file parsing and processing.
+"""
+
 import sys
 import re
 
@@ -13,6 +22,7 @@ class Record:
     """
 
     def __init__(self, header, sequence, quality = ''):
+        """ Initialize a Record object."""
         self.header = header
         self.sequence = sequence
         self.quality = quality
@@ -25,29 +35,60 @@ class Record:
         return len(self.sequence)
 
     def get_header(self):
+        """ Return the header."""
         return self.header
 
     def get_sequence(self):
+        """ Return the sequence."""
         return self.sequence
     
     def get_quality(self):
+        """ Return the quality of each fastq record."""
         return self.quality
     
     def get_i_length(self):
+        """Return the original sequence length before Record modification."""
         return self.i_length
 
     def get_trimmed_bases(self):
+        """Return concatenated trimmed bases from both ends."""
         return str(self.left_out+self.right_out)
 
     def rc(self):
-        """ Reverse complement of the sequence """
+        """
+        Compute the reverse complement of the sequence.
+        
+        The sequence is reversed and complemented. If the input file is FASTQ
+        (`f_f == 4`), the quality string is also reversed. This modifies the record in place and returns it.
+        
+        Returns:
+        The modified record after reverse complementation.
+        """
+
         self.sequence = self.sequence[::-1].strip().upper().replace("A","t").replace("T","a").replace("G","c").replace("C","g").upper()
         if f_f == 4: #case of a fastq input file
             self.quality = self.quality[::-1]
         return self
 
     def trim(self, cut_left = 0, cut_right = 0):
-        """ Trim bases """
+        """
+        Trim bases from the left and/or right sides of the sequence.
+        
+        Removes a specified number of bases from the start and/or end of the sequence.
+        If the input file is FASTQ (`f_f == 4`), the quality scores are trimmed accordingly. 
+        The method modifies the record in place and returns it.
+        
+        Args:
+        cut_left (int): Number of bases to trim from the left side.
+        cut_right (int): Number of bases to trim from the right side.
+        
+        Returns:
+        Record: The modified record after trimming.
+        
+        Raises:
+        SystemExit: If the total trim length is greater than the sequence length.
+        """
+        
         l=int(cut_left)
         r=int(cut_right)
         if l+r < len(self):
@@ -65,9 +106,16 @@ class Record:
                     sys.exit(f"WARNING. Adaptor length {l+r} is longer than the sequence {len(self)}")
 
     def adaptor(self):
-        """ Method to find the adaptor sequence within the sequence and
-        trim it. This method calls self.trim since it performs the
-        operation of removing a certain number of bases """
+        """
+        Detect and remove an adaptor sequence from the beginning of the sequence.
+        
+        If the sequence starts with the adaptor specified in the command-line
+        options, the adaptor length is trimmed from the left side of the sequence by calling `self.trim()`.
+        
+        Returns:
+        The modified record after adaptor removal, if adaptor is found.
+        """
+
         if re.match(options["--adaptor"].upper(),self.sequence.upper()):
             return self.trim(len(options["--adaptor"]))
 
