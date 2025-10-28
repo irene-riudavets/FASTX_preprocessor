@@ -13,16 +13,32 @@ import sys
 import re
 
 class Record:
-    """ Object representing a FASTX record.
+    """
+    Represents a FASTA or FASTQ record.
+
+    A Record object stores a sequence entry, including its identifier,
+    nucleotide sequence, and quality (for FASTQ). It also provides
+    methods for trimming, reverse-complementing, and adaptor removal.
 
     Attributes:
-        header      (str):     Sequence Identifier
-        sequence    (str):     Sequence
-        quality     (str):     Sequence quality (only for FASTQ)
+        header (str)      :     Sequence identifier (header line).
+        sequence (str)    :     Nucleotide sequence.
+        quality (str)     :     Quality string (only used for FASTQ records).
+        i_length (int)    :     Original sequence length before modification.
+        left_out (str)    :     Bases trimmed from the left end.
+        right_out (str)   :     Bases trimmed from the right end.
     """
 
     def __init__(self, header, sequence, quality = ''):
-        """ Initialize a Record object."""
+        """
+        Initialize a Record instance.
+
+        Args:
+            header (str)    : Sequence identifier.
+            sequence (str)  : Sequence string.
+            quality (str)   : Quality string (for FASTQ).
+        """
+        
         self.header = header
         self.sequence = sequence
         self.quality = quality
@@ -43,7 +59,7 @@ class Record:
         return self.sequence
     
     def get_quality(self):
-        """ Return the quality of each fastq record."""
+        """ Return the quality string (for FASTQ records)."""
         return self.quality
 
     def get_i_length(self):
