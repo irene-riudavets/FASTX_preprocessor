@@ -151,6 +151,7 @@ def define_options():
     global arguments
 
     commands = {
+            '--help (-h or -help )'   :       'Print available commands',  
             '--input'                 :       'Provide a valid file in .fasta or .fastq format',
             '--operation'             :       {
                 '<adaptor-removal>'   :       {
@@ -172,8 +173,9 @@ def define_options():
             "--trim-left" : 0,
             "--adaptor" : ""
         }
-
-    if len(sys.argv) == 1 or sys.argv[1] in ['-h', '-help', '--help']:
+    
+        
+    if len(sys.argv)==1 or sys.argv[1] in ['-h', '-help', '--help']:
         print_usage_and_exit()
     
     arguments = sys.argv[1:]
@@ -195,8 +197,11 @@ def print_usage_and_exit():
     """ Displays available command-line options with usage guidance and terminates execution."""
     
     print('Usage: ./fastx_pp.py --command(s) <argument(s)>')
-    print('\nAvailable commands:\n')
-    print_commands(commands)
+    if len(sys.argv) != 1:
+        print('\nAvailable commands:\n')
+        print_commands(commands)
+    elif len(sys.argv) == 1:
+        print('To see available commands use: -h, -help or --help')
     sys.exit()
 
 def print_commands(commands, indent=0):
