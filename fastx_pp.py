@@ -5,7 +5,7 @@ FASTX Preprocessor Module
 
 This module provides tools to process FASTA/FASTQ files by performing
 operations such as reverse complementation, trimming, and adaptor removal. 
-It defines a `Record` class to represent sequence records and command-line
+It defines a 'Record' class to represent sequence records and command-line
 utilities for file parsing and processing.
 """
 
