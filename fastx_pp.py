@@ -75,7 +75,7 @@ class Record:
         Compute the reverse complement of the sequence.
         
         The sequence is reversed and complemented. If the input file is FASTQ
-        (`f_f == 4`), the quality string is also reversed.
+        ('f_f == 4'), the quality string is also reversed.
         
         Returns:
             The modified record after reverse complementation.
@@ -91,7 +91,7 @@ class Record:
         Trim bases from the left and/or right sides of the sequence.
         
         Removes a specified number of bases from the start and/or
-        end of the sequence. If the input file is FASTQ (`f_f == 4`),
+        end of the sequence. If the input file is FASTQ ('f_f == 4'),
         the quality scores are trimmed accordingly. 
 
         Args:
