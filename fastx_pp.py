@@ -62,9 +62,9 @@ class Record:
         """ Return the quality string (for FASTQ records)."""
         return self.quality #get value of variable quality
 
-    def get_i_length(self):
+    def get_i_length(self): #get_i_length return the length of each sequence from the input file
         """Return the original sequence length before Record modification."""
-        return self.i_length #get value of variable i_length (initial length sequence)
+        return self.i_length 
 
     def get_trimmed_bases(self):
         """Return concatenated trimmed bases from both ends."""
@@ -171,8 +171,8 @@ def define_options():
             "--input" : "",
             "--output" : "",
             "--operation" : "", 
-            "--trim-right" : 0,
-            "--trim-left" : 0,
+            "--trim-right" : 0, #cero in case this command is not provided
+            "--trim-left" : 0, #cero in case this command is not provided
             "--adaptor" : ""
         }
     
@@ -224,7 +224,7 @@ def print_commands(commands, indent=0):
         else:
             print(' ' * indent + f"{key}: {value}\n")
 
-def validate_arguments(options):
+def validate_arguments(options): #function needs to provide options as argument
     """Validate command-line arguments.
 
     Checks that arguments are recognized, properly formatted, and compatible
@@ -306,7 +306,7 @@ def file_format():
                 return 4 #return 4 if fastq format because fastq format files iterates entries every four lines
             else:
                 sys.exit("WARNING. Invalid file format. Use only .fasta or .fastq files")
-    except FileNotFoundError:
+    except FileNotFoundError: #FileNotFoundError if file not found
         sys.exit("WARNING. Unable to read input file")
 
 def read_file_input(): #OPEN FILE AND CREATE RECORD
@@ -321,7 +321,7 @@ def read_file_input(): #OPEN FILE AND CREATE RECORD
     """
     
     global records
-    records = [] #records varaible stores all Record object entries
+    records = [] #"records" variable stores all Record object entries
     with open(options["--input"], 'rt') as file:
         line_no = 0
         for line in file:
@@ -346,12 +346,12 @@ def operation():
     to every sequence record. 
     """
     
-    for rec in records:
+    for rec in records: #choose function depending of operation provided
         if options["--operation"] == "rc":
             rec.rc()
 
         elif options["--operation"] == "trim":
-            rec.trim(options["--trim-left"],options["--trim-right"])
+            rec.trim(options["--trim-left"],options["--trim-right"]) 
 
         elif options["--operation"] == "adaptor-removal":
             rec.adaptor()
@@ -371,7 +371,7 @@ def write_output():
             fd.write(rec.get_header()+'\n')
             fd.write(rec.get_sequence()+'\n')
             
-            if f_f==4: 
+            if f_f==4: #if input file is fastq also append "+" line and quality lines
                 fd.write('+\n')
                 fd.write(rec.get_quality()+'\n')
 
@@ -410,8 +410,8 @@ def summary():
     if options["--operation"] == "adaptor-removal":
         num_adaptors = 0
         for rec in records:
-            if len(rec) != rec.get_i_length(): #get_i_length return the length of each sequence from the input file
-                num_adaptors += 1
+            if len(rec) != rec.get_i_length(): # selects sequences than length has been modified
+                num_adaptors += 1 
         print(f'{num_adaptors}\tadaptors-found')
     
     elif options["--operation"] == "trim":
@@ -419,7 +419,7 @@ def summary():
         trim_counts = {'A' : 0, 'C' : 0, 'G' : 0, 'T' : 0, 'N' : 0}
 
         for rec in records:
-            trim_seq = str(rec.get_trimmed_bases().upper()) 
+            trim_seq = str(rec.get_trimmed_bases().upper()) #get sequence that fot trimmed
             trim_bases += len(trim_seq)
             for base in trim_counts:
                 trim_counts[base] += trim_seq.count(base)
