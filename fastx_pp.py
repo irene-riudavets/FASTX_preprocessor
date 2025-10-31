@@ -41,34 +41,34 @@ class Record:
         
         self.header = header
         self.sequence = sequence
-        self.quality = quality
-        self.i_length = len(sequence)
+        self.quality = quality #Only in fastq input files quality is stored (when fasta quality = '')
+        self.i_length = len(sequence) #Store the initial length of sequence when Record object is defined  
         self.left_out= ''
         self.right_out= ''
 
     def __len__(self):
         """ Return length of the sequence """
-        return len(self.sequence)
+        return len(self.sequence)  #len() function will provide length of sequence in that moment
 
     def get_header(self):
         """ Return the header."""
-        return self.header
+        return self.header #get value of variable header
 
     def get_sequence(self):
         """ Return the sequence."""
-        return self.sequence
+        return self.sequence #get value of variable sequence
     
     def get_quality(self):
         """ Return the quality string (for FASTQ records)."""
-        return self.quality
+        return self.quality #get value of variable quality
 
     def get_i_length(self):
         """Return the original sequence length before Record modification."""
-        return self.i_length
+        return self.i_length #get value of variable i_length (initial length sequence)
 
     def get_trimmed_bases(self):
         """Return concatenated trimmed bases from both ends."""
-        return str(self.left_out+self.right_out)
+        return str(self.left_out+self.right_out) #get the sequence that gets trimmed from both ends
 
     def rc(self):
         """
@@ -81,12 +81,13 @@ class Record:
             The modified record after reverse complementation.
         """
 
-        self.sequence = self.sequence[::-1].strip().upper().replace("A","t").replace("T","a").replace("G","c").replace("C","g").upper()
+        self.sequence = self.sequence[::-1].strip().upper().replace("A","t").replace("T","a").replace("G","c").replace("C","g").upper() 
+        #replace to lower case to differ between the nucleotides that are already complemented (as the second to forth replace takes place)
         if f_f == 4: #case of a fastq input file
-            self.quality = self.quality[::-1]
+            self.quality = self.quality[::-1] #in case fastq quality will get JUST reversed
         return self
 
-    def trim(self, cut_left = 0, cut_right = 0):
+    def trim(self, cut_left = 0, cut_right = 0): 
         """
         Trim bases from the left and/or right sides of the sequence.
         
@@ -107,14 +108,14 @@ class Record:
 
         l=int(cut_left)
         r=int(cut_right)
-        if l+r < len(self):
+        if l+r < len(self): #the number of trimmed bases can not exceed length of sequence
             self.left_out=self.sequence[0:l:1]
             self.right_out=self.sequence[(len(self)-r)::1]
             self.sequence = self.sequence[l:(len(self)-r):1]
             if f_f == 4:
-                self.quality = self.quality[l:((self.i_length)-r):1]
+                self.quality = self.quality[l:((self.i_length)-r):1] #in case fastq quality also is trimmed
             return self
-        else:
+        else: #When length trimmed bases exceed length sequence exit program
             if options["--operation"] == "trim":
                 sys.exit(f"WARNING. Trim length {l+r} is longer than the sequence length: {len(self)} bp")
             else:
@@ -133,8 +134,8 @@ class Record:
             The modified record after adaptor removal, if adaptor is found.
         """
 
-        if re.match(options["--adaptor"].upper(),self.sequence.upper()):
-            return self.trim(len(options["--adaptor"]))
+        if re.match(options["--adaptor"].upper(),self.sequence.upper()):#only when adaptor is found in sequence it will get trimmed
+            return self.trim(len(options["--adaptor"])) #reusage of the trim function to trim the adaptor  
 
 def define_options():
     """Define and parse command-line options.
@@ -145,7 +146,7 @@ def define_options():
     Raises:
         SystemExit: If argument usage is invalid or required arguments are missing.
     """
-
+#global commands needed in other functions
     global options
     global commands
     global arguments
@@ -165,6 +166,7 @@ def define_options():
                 },
             '--output'                :       'Provide a name for the created file with the same format as the input file(.fasta or .fastq)'
         }
+    #variable to store command arguments 
     options = {
             "--input" : "",
             "--output" : "",
@@ -179,17 +181,19 @@ def define_options():
         print_usage_and_exit()
     
     arguments = sys.argv[1:]
-    #Loop to assign the argument to each option
+    
+    #Check if after every command there is an argument
     for i in range(0,len(arguments)):
         if i%2==1 and re.match("--",arguments[i]):
             sys.exit(f'WARNING. Usage <--command> <argument>. Arguments cannot start with \"--\"')    
         elif i%2==0 and not re.match("--",arguments[i]):
             sys.exit(f'WARNING. Usage <--command> <argument>.')
-
-    for key in options:
+    
+    #Loop to assign the argument to each option
+    for key in options: #with options dicctionary, it does not matter the order the user provides the argument
         if key in arguments:
             try:
-                    options[key] = arguments[arguments.index(key)+1]
+                    options[key] = arguments[arguments.index(key)+1] #argument for a command will be stored in a key for that command
             except IndexError as ie:
                 sys.exit(f'WARNING. No argument was provided for {key}')
 
@@ -297,9 +301,9 @@ def file_format():
         with open(options["--input"],"rt") as file:
             first_line=file.readline()
             if (re.search(r".fasta$",options["--input"])) and (re.match(">", first_line)):
-                return 2
+                return 2 #return 2 if fasta format because fasta format files iterates entries every two lines 
             elif (re.search(r".fastq$",options["--input"])) and (re.match("@",first_line)):
-                return 4
+                return 4 #return 4 if fastq format because fastq format files iterates entries every four lines
             else:
                 sys.exit("WARNING. Invalid file format. Use only .fasta or .fastq files")
     except FileNotFoundError:
@@ -317,7 +321,7 @@ def read_file_input(): #OPEN FILE AND CREATE RECORD
     """
     
     global records
-    records = []
+    records = [] #records varaible stores all Record object entries
     with open(options["--input"], 'rt') as file:
         line_no = 0
         for line in file:
@@ -327,11 +331,11 @@ def read_file_input(): #OPEN FILE AND CREATE RECORD
             elif line_no % f_f == 1:
                 sequence = line
                 if f_f==2: # In case of fasta format (f_f = 2) record will only contain header and sequence
-                    record = Record(header, sequence) 
+                    record = Record(header, sequence) #Each entry of fasta file saved as a Record object
                     records.append(record)
             elif line_no % f_f == 3: # only when fastq format (f_f = 4) quality will be included in record
                 quality = line
-                record = Record(header,sequence,quality)
+                record = Record(header,sequence,quality) #Each entry of fastq file saved as a Record object (+ quality)
                 records.append(record)
             line_no+=1
 
@@ -367,7 +371,7 @@ def write_output():
             fd.write(rec.get_header()+'\n')
             fd.write(rec.get_sequence()+'\n')
             
-            if f_f==4:
+            if f_f==4: 
                 fd.write('+\n')
                 fd.write(rec.get_quality()+'\n')
 
@@ -438,7 +442,7 @@ def main():
     define_options()
     validate_arguments(options)
     global f_f
-    f_f = file_format()
+    f_f = file_format() #Variable f_f will contain information about format of input file: f_f==2 if fasta and f_f==4 if fastq 
     read_file_input()
     operation()
     write_output()
