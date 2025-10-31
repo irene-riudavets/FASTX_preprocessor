@@ -42,7 +42,7 @@ class Record:
         self.header = header
         self.sequence = sequence
         self.quality = quality #Only in fastq input files quality is stored (when fasta quality = '')
-        self.i_length = len(sequence) #Store the initial length of sequence when Record object is defined  
+        self.i_length = len(sequence)
         self.left_out= ''
         self.right_out= ''
 
@@ -52,23 +52,23 @@ class Record:
 
     def get_header(self):
         """ Return the header."""
-        return self.header #get value of variable header
+        return self.header
 
     def get_sequence(self):
         """ Return the sequence."""
-        return self.sequence #get value of variable sequence
+        return self.sequence
     
     def get_quality(self):
         """ Return the quality string (for FASTQ records)."""
-        return self.quality #get value of variable quality
+        return self.quality
 
-    def get_i_length(self): #get_i_length return the length of each sequence from the input file
+    def get_i_length(self):
         """Return the original sequence length before Record modification."""
         return self.i_length 
 
     def get_trimmed_bases(self):
         """Return concatenated trimmed bases from both ends."""
-        return str(self.left_out+self.right_out) #get the sequence that gets trimmed from both ends
+        return str(self.left_out+self.right_out) #get the sequence that is trimmed from both ends
 
     def rc(self):
         """
@@ -84,7 +84,7 @@ class Record:
         self.sequence = self.sequence[::-1].strip().upper().replace("A","t").replace("T","a").replace("G","c").replace("C","g").upper() 
         #replace to lower case to differ between the nucleotides that are already complemented (as the second to forth replace takes place)
         if f_f == 4: #case of a fastq input file
-            self.quality = self.quality[::-1] #in case fastq quality will get JUST reversed
+            self.quality = self.quality[::-1] #For fastq files, quality will be just reversed, not complemented.
         return self
 
     def trim(self, cut_left = 0, cut_right = 0): 
@@ -108,12 +108,12 @@ class Record:
 
         l=int(cut_left)
         r=int(cut_right)
-        if l+r < len(self): #the number of trimmed bases can not exceed length of sequence
+        if l+r < len(self): #the number of trimmed bases cannot exceed length of the sequence
             self.left_out=self.sequence[0:l:1]
             self.right_out=self.sequence[(len(self)-r)::1]
             self.sequence = self.sequence[l:(len(self)-r):1]
             if f_f == 4:
-                self.quality = self.quality[l:((self.i_length)-r):1] #in case fastq quality also is trimmed
+                self.quality = self.quality[l:((self.i_length)-r):1] #For fastq files, quality is also trimmed
             return self
         else: #When length trimmed bases exceed length sequence exit program
             if options["--operation"] == "trim":
@@ -134,7 +134,7 @@ class Record:
             The modified record after adaptor removal, if adaptor is found.
         """
 
-        if re.match(options["--adaptor"].upper(),self.sequence.upper()):#only when adaptor is found in sequence it will get trimmed
+        if re.match(options["--adaptor"].upper(),self.sequence.upper()):#Only when an adaptor is found in the sequence it will get trimmed
             return self.trim(len(options["--adaptor"])) #reusage of the trim function to trim the adaptor  
 
 def define_options():
@@ -171,8 +171,8 @@ def define_options():
             "--input" : "",
             "--output" : "",
             "--operation" : "", 
-            "--trim-right" : 0, #cero in case this command is not provided
-            "--trim-left" : 0, #cero in case this command is not provided
+            "--trim-right" : 0, #zero in case this command is not provided
+            "--trim-left" : 0, #zero in case this command is not provided
             "--adaptor" : ""
         }
     
@@ -190,10 +190,10 @@ def define_options():
             sys.exit(f'WARNING. Usage <--command> <argument>.')
     
     #Loop to assign the argument to each option
-    for key in options: #with options dicctionary, it does not matter the order the user provides the argument
+    for key in options: #by using a dictionary (options), the order of the commands does not matter
         if key in arguments:
             try:
-                    options[key] = arguments[arguments.index(key)+1] #argument for a command will be stored in a key for that command
+                    options[key] = arguments[arguments.index(key)+1] #The provided argument after an option (--command) will be saved as the dictionary key to that command
             except IndexError as ie:
                 sys.exit(f'WARNING. No argument was provided for {key}')
 
@@ -277,7 +277,7 @@ def validate_arguments(options): #function needs to provide options as argument
             sys.exit(f"WARNING. When using --operation trim, provide --trim-left and/or --trim-right followed by a positive integer")
 
     elif value == 'adaptor-removal':
-        # Adapotor sequence cannot be empty and only contain valid characters
+        # Adaptor sequence cannot be empty and only contain valid characters
         adaptor = options["--adaptor"].upper()
         if not adaptor:
             sys.exit("WARNING. When using --operation adaptor-removal, provide --adaptor <sequence>")
@@ -333,7 +333,7 @@ def read_file_input(): #OPEN FILE AND CREATE RECORD
                 if f_f==2: # In case of fasta format (f_f = 2) record will only contain header and sequence
                     record = Record(header, sequence) #Each entry of fasta file saved as a Record object
                     records.append(record)
-            elif line_no % f_f == 3: # only when fastq format (f_f = 4) quality will be included in record
+            elif line_no % f_f == 3: # quality is only included in Record when fastq format (f_f = 4)
                 quality = line
                 record = Record(header,sequence,quality) #Each entry of fastq file saved as a Record object (+ quality)
                 records.append(record)
@@ -346,7 +346,7 @@ def operation():
     to every sequence record. 
     """
     
-    for rec in records: #choose function depending of operation provided
+    for rec in records: #choose function depending of the operation provided
         if options["--operation"] == "rc":
             rec.rc()
 
@@ -410,7 +410,7 @@ def summary():
     if options["--operation"] == "adaptor-removal":
         num_adaptors = 0
         for rec in records:
-            if len(rec) != rec.get_i_length(): # selects sequences than length has been modified
+            if len(rec) != rec.get_i_length(): # selects sequences which their length has been modified
                 num_adaptors += 1 
         print(f'{num_adaptors}\tadaptors-found')
     
@@ -419,7 +419,7 @@ def summary():
         trim_counts = {'A' : 0, 'C' : 0, 'G' : 0, 'T' : 0, 'N' : 0}
 
         for rec in records:
-            trim_seq = str(rec.get_trimmed_bases().upper()) #get sequence that fot trimmed
+            trim_seq = str(rec.get_trimmed_bases().upper()) #Get the sequences that got trimmed
             trim_bases += len(trim_seq)
             for base in trim_counts:
                 trim_counts[base] += trim_seq.count(base)
